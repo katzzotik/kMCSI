@@ -1,0 +1,120 @@
+#----------------------------------------------------------------------
+# Copyright (c) 2026 katzzotik | MIT License
+# Repository: https://www.github.com/katzzotik/kMCSI
+# Contact: katzzotik@proton.me
+
+# NOT AN OFFICIAL MINECRAFT PRODUCT. THIS SOFTWARE IS NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT,
+# OR ANY 3RD-PARTY MINECRAFT SERVER DEVELOPER, SUCH AS PAPERMC OR PURPURMC.
+# IT IS A MINECRAFT SERVER INSTALL HELPER, AND DOES NOT CONTAIN OR DISTRIBUTE ANY OFFICIAL FILES,
+# SUCH AS GAME, SERVER OR RUNTIME FILES. SERVER FILES ARE BEING DOWNLOADED FROM THEIR OFFICIAL SOURCES AT RUNTIME.
+# THE USER MUST STILL ACCEPT THE MINECRAFT EULA TO RUN THE SERVER. IT DOES NOT ACCEPT THE EULA WITHOUT THE USER'S AGREEMENT.
+# ALL TRADEMARKS, LOGOS, AND BRAND NAMES BELONG TO THEIR RESPECTIVE OWNERS.
+# Server jars provided by PaperMC, PurpurMC (once added) and Mojang.
+#----------------------------------------------------------------------
+
+from pathlib import Path
+
+if __name__ == "__main__":
+    print("Please run cli.py")
+
+VERSION = "Alpha 0.0.1"
+
+# Defaults
+DEFAULT_INSTALL_PATH = Path.home() / "kMCSI-server"
+DEFAULT_SERVER_JAR = "paper"
+DEFAULT_MINECRAFT_VERSION = "latest"
+DEFAULT_SERVER_JAR_VERSION = "latest"
+DEFAULT_MINECRAFT_EULA = False
+
+text_color = {
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "gray": "\033[90m",
+    "reset": "\033[0m",
+}
+
+server_jars = [
+    "paper",
+    "purpur",
+    "vanilla",
+]
+
+def copyright_notice():
+    print(f"{text_color["yellow"]}Copyright (c) 2026 katzzotik | MIT License{text_color["reset"]}")
+    print(f"{text_color["yellow"]}Repository: https://www.github.com/katzzotik/kMCSI{text_color["reset"]}")
+    print(f"{text_color["yellow"]}Contact: katzzotik@proton.me{text_color["reset"]}")
+    print(
+        f"{text_color["red"]}"
+        "\nNOT AN OFFICIAL MINECRAFT PRODUCT. THIS SOFTWARE IS NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT,\n"
+        "OR ANY 3RD-PARTY MINECRAFT SERVER DEVELOPER, SUCH AS PAPERMC OR PURPURMC.\n"
+        "IT IS A MINECRAFT SERVER INSTALL HELPER, AND DOES NOT CONTAIN OR DISTRIBUTE ANY OFFICIAL FILES,\n"
+        "SUCH AS GAME, SERVER OR RUNTIME FILES. SERVER FILES ARE BEING DOWNLOADED FROM THEIR OFFICIAL SOURCES AT RUNTIME.\n"
+        "THE USER MUST STILL ACCEPT THE MINECRAFT EULA TO RUN THE SERVER.\nIT DOES NOT ACCEPT THE EULA WITHOUT THE USER'S AGREEMENT.\n"
+        "ALL TRADEMARKS, LOGOS, AND BRAND NAMES BELONG TO THEIR RESPECTIVE OWNERS."
+        f"{text_color["reset"]}"
+    )
+    print(f"{text_color["yellow"]}Server jars provided by PaperMC, PurpurMC (once added) and Mojang.{text_color["reset"]}\n")
+
+def get_install_path() -> Path:
+    while True:
+        try: 
+            user_input = input(f"{text_color["gray"]}Leave empty for default> {text_color["yellow"]}").strip()
+        finally:
+            print(text_color["reset"], end="")
+
+        if not user_input:
+            print(f"{text_color["gray"]}[LOG] Default path selected.{text_color["reset"]}")
+            target_dir = DEFAULT_INSTALL_PATH
+        else:
+            target_dir = Path(user_input).expanduser().resolve()
+
+        if target_dir.exists() and not target_dir.is_dir():
+            print(f"{text_color["red"]}[ERROR] {target_dir} is a file, not a directory.{text_color["reset"]}")
+            continue
+        elif target_dir.exists() and any(target_dir.iterdir()):
+            print(f"{text_color["red"]}[ERROR] {target_dir} is not empty.{text_color["reset"]}")
+            continue
+        
+        return target_dir
+
+def get_server_jar():
+    while True:
+        target_server_jar = None
+
+        try: 
+            user_input = input(f"{text_color["gray"]}Leave empty for default> {text_color["yellow"]}").strip().lower()
+        finally:
+            print(text_color["reset"], end="")
+
+        if not user_input:
+            user_input = DEFAULT_SERVER_JAR
+        elif user_input == "list":
+            for index, jar in enumerate(server_jars, start=1):
+                print(f"{index}. {jar.capitalize()}")
+            continue
+        
+        if user_input.isdigit():
+            index = int(user_input) - 1
+            if 0 <= index < len(server_jars):
+                user_input = server_jars[index]
+        
+        if user_input in server_jars:
+            if user_input == "paper":
+                target_server_jar = "paper"
+        else:
+            print(f"{text_color["red"]}[ERROR] Unknown server jar.{text_color["reset"]}")
+            continue
+        if not target_server_jar:
+            print(f"{text_color["gray"]}[LOG] {user_input.capitalize()} is not supported yet, but it's in the works!{text_color["reset"]}")
+            continue
+        else:
+            print(f"{text_color["gray"]}[LOG] {target_server_jar.capitalize()} selected.... the tool isn't really finished so bye bye{text_color["reset"]}")
+            return target_server_jar
+
+def fetch_paper_minecraft_versions():
+    url = "https://fill.papermc.io/v3/projects/paper/versions"
+    headers = {
+        "User-Agent": f"katzzotikz-MC-Server-Installer/{VERSION} (https://github.com/katzzotik/kMCSI)"
+    }

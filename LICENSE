@@ -1,0 +1,33 @@
+MIT License
+
+Copyright (c) 2026 katzzotik
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+THIRD-PARTY NOTICES & DISCLAIMER:
+
+NOT AN OFFICIAL MINECRAFT PRODUCT. THIS SOFTWARE IS NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT,
+OR ANY 3RD-PARTY MINECRAFT SERVER DEVELOPER, SUCH AS PAPERMC OR PURPURMC.
+IT IS A MINECRAFT SERVER INSTALL HELPER, AND DOES NOT CONTAIN OR DISTRIBUTE ANY OFFICIAL FILES,
+SUCH AS GAME, SERVER OR RUNTIME FILES. SERVER FILES ARE BEING DOWNLOADED FROM THEIR OFFICIAL SOURCES AT RUNTIME.
+THE USER MUST STILL ACCEPT THE MINECRAFT EULA TO RUN THE SERVER. IT DOES NOT ACCEPT THE EULA WITHOUT THE USER'S AGREEMENT.
+ALL TRADEMARKS, LOGOS, AND BRAND NAMES BELONG TO THEIR RESPECTIVE OWNERS.
+Server jars provided by PaperMC, PurpurMC (once added) and Mojang.
