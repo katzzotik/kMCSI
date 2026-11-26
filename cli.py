@@ -13,24 +13,25 @@
 #----------------------------------------------------------------------
 
 import core
+from core import text_color
 from pathlib import Path
 
+# Fix color issues on windows conhost
+core.fix_conhost_text_color()
+
 try:
-    print(f"{core.text_color["blue"]}Welcome to kMCSI Version {core.VERSION}!{core.text_color["reset"]}")
+    print(f"{text_color["blue"]}Welcome to kMCSI Version {core.VERSION}!{text_color["reset"]}")
     core.copyright_notice()
 
-    # Define
-    install_path = None
-    server_jar = None
-    minecraft_version = None
-
     print(f"Please select a location to install the server to.\nDefault: {core.DEFAULT_INSTALL_PATH}")
-    install_path = core.get_install_path()
-    print(f"{core.text_color["gray"]}[LOG] Installing to: {install_path}\n{core.text_color["reset"]}")
+    core.install_path = core.get_install_path_from_user()
 
     print(f"Please specify the server jar would you like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_JAR.capitalize()}")
-    server_jar = core.get_server_jar()
+    core.server_jar = core.get_server_jar_from_user()
+
+    print(f"Please choose the Server version you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_VERSION}")
+    core.server_version = core.get_server_version_from_user()
 
 
 except KeyboardInterrupt:
-    print(f"{core.text_color["reset"]}\n{core.text_color["gray"]}[LOG] Installation canceled by user.{core.text_color["reset"]}")
+    print(f"{text_color["reset"]}\n{text_color["gray"]}[LOG] Installation canceled by user.{text_color["reset"]}")

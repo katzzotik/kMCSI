@@ -12,19 +12,32 @@
 # Server jars provided by PaperMC, PurpurMC (once added) and Mojang.
 #----------------------------------------------------------------------
 
+import ctypes
+import os
+import json
+import urllib.request
 from pathlib import Path
 
 if __name__ == "__main__":
     print("Please run cli.py")
 
-VERSION = "Alpha 0.0.1"
+VERSION = "Alpha 0.0.2"
 
 # Defaults
 DEFAULT_INSTALL_PATH = Path.home() / "kMCSI-server"
 DEFAULT_SERVER_JAR = "paper"
-DEFAULT_MINECRAFT_VERSION = "latest"
-DEFAULT_SERVER_JAR_VERSION = "latest"
+DEFAULT_SERVER_VERSION = "latest"
+DEFAULT_SERVER_BUILD = "latest"
 DEFAULT_MINECRAFT_EULA = False
+
+# Selected
+install_path = None
+server_jar = None
+server_version = None
+server_build = None
+
+# Cache
+_cached_papermc_versions = None
 
 text_color = {
     "red": "\033[31m",
@@ -40,6 +53,14 @@ server_jars = [
     "purpur",
     "vanilla",
 ]
+
+def fix_conhost_text_color():
+    if os.name == "nt":
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        mode = ctypes.c_ulong()
+        if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(handle, mode.value | 0x0004)  # ENABLE_VIRTUAL_TERMINAL_PROCESSING
 
 def copyright_notice():
     print(f"{text_color["yellow"]}Copyright (c) 2026 katzzotik | MIT License{text_color["reset"]}")
@@ -57,15 +78,16 @@ def copyright_notice():
     )
     print(f"{text_color["yellow"]}Server jars provided by PaperMC, PurpurMC (once added) and Mojang.{text_color["reset"]}\n")
 
-def get_install_path() -> Path:
+def get_install_path_from_user() -> Path:
     while True:
+        target_dir = None
+
         try: 
             user_input = input(f"{text_color["gray"]}Leave empty for default> {text_color["yellow"]}").strip()
         finally:
             print(text_color["reset"], end="")
 
         if not user_input:
-            print(f"{text_color["gray"]}[LOG] Default path selected.{text_color["reset"]}")
             target_dir = DEFAULT_INSTALL_PATH
         else:
             target_dir = Path(user_input).expanduser().resolve()
@@ -77,9 +99,10 @@ def get_install_path() -> Path:
             print(f"{text_color["red"]}[ERROR] {target_dir} is not empty.{text_color["reset"]}")
             continue
         
+        print(f"{text_color["gray"]}[LOG] Installing to: {target_dir}\n{text_color["reset"]}")
         return target_dir
 
-def get_server_jar():
+def get_server_jar_from_user():
     while True:
         target_server_jar = None
 
@@ -110,11 +133,60 @@ def get_server_jar():
             print(f"{text_color["gray"]}[LOG] {user_input.capitalize()} is not supported yet, but it's in the works!{text_color["reset"]}")
             continue
         else:
-            print(f"{text_color["gray"]}[LOG] {target_server_jar.capitalize()} selected.... the tool isn't really finished so bye bye{text_color["reset"]}")
+            print(f"{text_color["gray"]}[LOG] {target_server_jar.capitalize()} selected.{text_color["reset"]}")
             return target_server_jar
 
-def fetch_paper_minecraft_versions():
+def fetch_papermc_versions(force_refresh=False):
+    global _cached_papermc_versions
+    
+    if _cached_papermc_versions is not None and not force_refresh:
+        print(f"{text_color["gray"]}[LOG] Using cached PaperMC versions{text_color["reset"]}")
+        return _cached_papermc_versions
+
     url = "https://fill.papermc.io/v3/projects/paper/versions"
     headers = {
         "User-Agent": f"katzzotikz-MC-Server-Installer/{VERSION} (https://github.com/katzzotik/kMCSI)"
     }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req) as response:
+        data = json.loads(response.read().decode("utf-8"))
+        
+    supported_versions = []
+    unsupported_versions = []
+
+    for v in data["versions"]:
+        if v["version"]["support"]["status"] == "SUPPORTED":
+            supported_versions.append(v["version"]["id"])
+
+    for v in data["versions"]:
+        if v["version"]["support"]["status"] == "UNSUPPORTED":
+            unsupported_versions.append(v["version"]["id"])
+
+    _cached_papermc_versions = (supported_versions, unsupported_versions)
+    print(f"{text_color["gray"]}[LOG] PaperMC Versions were fetched from API and cached{text_color["reset"]}")
+    return supported_versions, unsupported_versions
+
+def list_papermc_versions():
+    paper_supported, paper_unsupported = fetch_papermc_versions()
+    print(f"{text_color["green"]}Supported:")
+    print(", ".join(paper_supported))
+    print(f"{text_color["red"]}Unsupported (no updates from PaperMC, but selectable):")
+    print(", ".join(paper_unsupported))
+    print(f"{text_color["reset"]}")
+
+def get_server_version_from_user():
+    if server_jar == "paper":
+        fetch_papermc_versions()
+    
+    while True:
+        try: 
+            user_input = input(f"{text_color["gray"]}Leave empty for default> {text_color["yellow"]}").strip().lower()
+        finally:
+            print(text_color["reset"], end="")
+        
+        if user_input == "list":
+            if server_jar == "paper":
+                list_papermc_versions()
+        else:
+            print("This tool isn't finished.")
+        

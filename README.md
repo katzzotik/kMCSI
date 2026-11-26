@@ -8,7 +8,7 @@
 >> additions, reporting issues/suggesting things, or whatever else you want to help with.
 >> To be honest I don't even know whether I will finish this tool, EVER, so let's see, shall we?
 
-**Server this tool uses jars provided by PaperMC, PurpurMC (once added) and Mojang. You guys are amazing!**\
+**Server jars this tool uses are provided by PaperMC, PurpurMC (once added) and Mojang (currently as backbone for paper, no support for vanilla yet) at runtime. You guys are amazing!**\
 _Check [LICENSE](LICENSE) for more Information_
 
 ## What is this tool?
