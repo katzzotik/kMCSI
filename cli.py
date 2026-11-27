@@ -14,7 +14,6 @@
 
 import core
 from core import text_color
-from pathlib import Path
 
 # Fix color issues on windows conhost
 core.fix_conhost_text_color()
@@ -26,10 +25,10 @@ try:
     print(f"Please select a location to install the server to.\nDefault: {core.DEFAULT_INSTALL_PATH}")
     core.install_path = core.get_install_path_from_user()
 
-    print(f"Please specify the server jar would you like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_JAR.capitalize()}")
+    print(f"Please specify the server jar you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_JAR.capitalize()}")
     core.server_jar = core.get_server_jar_from_user()
 
-    print(f"Please choose the Server version you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_VERSION}")
+    print(f"Please choose the server version you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_VERSION}")
     core.server_version = core.get_server_version_from_user()
 
 

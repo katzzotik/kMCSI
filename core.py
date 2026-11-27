@@ -15,16 +15,19 @@
 import ctypes
 import os
 import json
+import shutil
+import textwrap
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 if __name__ == "__main__":
     print("Please run cli.py")
 
-VERSION = "Alpha 0.0.2"
+VERSION = "Alpha 0.0.3"
 
 # Defaults
-DEFAULT_INSTALL_PATH = Path.home() / "kMCSI-server"
+DEFAULT_INSTALL_PATH = Path.home() / "mc-server"
 DEFAULT_SERVER_JAR = "paper"
 DEFAULT_SERVER_VERSION = "latest"
 DEFAULT_SERVER_BUILD = "latest"
@@ -39,6 +42,7 @@ server_build = None
 # Cache
 _cached_papermc_versions = None
 
+# Support for text color
 text_color = {
     "red": "\033[31m",
     "green": "\033[32m",
@@ -48,6 +52,7 @@ text_color = {
     "reset": "\033[0m",
 }
 
+# Available server jars
 server_jars = [
     "paper",
     "purpur",
@@ -140,39 +145,67 @@ def fetch_papermc_versions(force_refresh=False):
     global _cached_papermc_versions
     
     if _cached_papermc_versions is not None and not force_refresh:
-        print(f"{text_color["gray"]}[LOG] Using cached PaperMC versions{text_color["reset"]}")
+        print(f"{text_color["gray"]}[DEBUG] Using cached PaperMC versions{text_color["reset"]}")
         return _cached_papermc_versions
+    
+    try:
+        url = "https://fill.papermc.io/v3/projects/paper/versions"
+        headers = {
+            "User-Agent": f"katzzotikz-MC-Server-Installer/{VERSION} (https://github.com/katzzotik/kMCSI)"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            
+        supported_versions = []
+        unsupported_versions = []
 
-    url = "https://fill.papermc.io/v3/projects/paper/versions"
-    headers = {
-        "User-Agent": f"katzzotikz-MC-Server-Installer/{VERSION} (https://github.com/katzzotik/kMCSI)"
-    }
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req) as response:
-        data = json.loads(response.read().decode("utf-8"))
-        
-    supported_versions = []
-    unsupported_versions = []
+        for v in data["versions"]:
+            if v["version"]["support"]["status"] == "SUPPORTED":
+                supported_versions.append(v["version"]["id"])
 
-    for v in data["versions"]:
-        if v["version"]["support"]["status"] == "SUPPORTED":
-            supported_versions.append(v["version"]["id"])
+        for v in data["versions"]:
+            if v["version"]["support"]["status"] == "UNSUPPORTED":
+                unsupported_versions.append(v["version"]["id"])
 
-    for v in data["versions"]:
-        if v["version"]["support"]["status"] == "UNSUPPORTED":
-            unsupported_versions.append(v["version"]["id"])
-
-    _cached_papermc_versions = (supported_versions, unsupported_versions)
-    print(f"{text_color["gray"]}[LOG] PaperMC Versions were fetched from API and cached{text_color["reset"]}")
-    return supported_versions, unsupported_versions
+        _cached_papermc_versions = (supported_versions, unsupported_versions)
+        print(f"{text_color["gray"]}[DEBUG] PaperMC Versions were fetched from API and cached{text_color["reset"]}")
+        return supported_versions, unsupported_versions
+    except urllib.error.URLError:
+        print(f"{text_color["red"]}[ERROR] urllib encountered an URLError! Is the server reachable? Are you connected to the internet?{text_color["reset"]}")
+        return ""
+    except urllib.error.HTTPError:
+        print(f"{text_color["red"]}[ERROR] urllib encountered an HTTPError! There seems to be a problem on the server side.{text_color["reset"]}")
+        return ""
+    except urllib.error.ContentTooShortError:
+        print(f"{text_color["red"]}[ERROR] urllib encountered an ContentTooShortError!{text_color["reset"]}")
+        return ""
+    except Exception as e:
+        print(f"{text_color["red"]}[ERROR] Unexpected Error: ({type(e).__name__}):{e}{text_color["reset"]}")
 
 def list_papermc_versions():
-    paper_supported, paper_unsupported = fetch_papermc_versions()
-    print(f"{text_color["green"]}Supported:")
-    print(", ".join(paper_supported))
-    print(f"{text_color["red"]}Unsupported (no updates from PaperMC, but selectable):")
-    print(", ".join(paper_unsupported))
-    print(f"{text_color["reset"]}")
+    try:
+        paper_supported, paper_unsupported = fetch_papermc_versions()
+
+        print_supported = ", ".join(paper_supported)
+        print_unsupported = ", ".join(paper_unsupported)
+
+        terminal_width = shutil.get_terminal_size().columns
+        
+        print_supported_wrapped = textwrap.fill(print_supported, width=terminal_width)
+        print_unsupported_wrapped = textwrap.fill(print_unsupported, width=terminal_width)
+
+        print(f"{text_color["green"]}Supported:")
+        #print(", ".join(paper_supported))
+        print(print_supported_wrapped)
+
+        print(f"{text_color["red"]}Unsupported (no updates from PaperMC, but selectable):")
+        #print(", ".join(paper_unsupported))
+        print(print_unsupported_wrapped)
+
+        print(f"{text_color["reset"]}", end="")
+    except Exception:
+        print(f"{text_color["red"]}[ERROR] It seems the API did not return any available versions.{text_color["reset"]}")
 
 def get_server_version_from_user():
     if server_jar == "paper":
@@ -184,9 +217,22 @@ def get_server_version_from_user():
         finally:
             print(text_color["reset"], end="")
         
-        if user_input == "list":
-            if server_jar == "paper":
+        if server_jar == "paper":
+            if user_input == "list":
                 list_papermc_versions()
-        else:
-            print("This tool isn't finished.")
+                continue
+            elif not user_input or user_input == "latest":
+                target_server_version = fetch_papermc_versions()[0][0]
+            elif any(user_input in group for group in fetch_papermc_versions()):
+                target_server_version = user_input
+            else:
+                print(f"{text_color["red"]}[ERROR] Unknown server version.{text_color["reset"]}")
+                continue
+
+
+        print(f"{text_color["gray"]}[LOG] {target_server_version} selected.{text_color["reset"]}")
+        print("This tool isn't finished!")
+        return target_server_version
+
+        
         
