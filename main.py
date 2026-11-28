@@ -22,14 +22,19 @@ try:
     print(f"{text_color["blue"]}Welcome to kMCSI Version {core.VERSION}!{text_color["reset"]}")
     core.copyright_notice()
 
-    print(f"Please select a location to install the server to.\nDefault: {core.DEFAULT_INSTALL_PATH}")
     core.install_path = core.get_install_path_from_user()
 
-    print(f"Please specify the server jar you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_JAR.capitalize()}")
     core.server_jar = core.get_server_jar_from_user()
 
-    print(f"Please choose the server version you would like to use. Type list for all options.\nDefault: {core.DEFAULT_SERVER_VERSION}")
     core.server_version = core.get_server_version_from_user()
+
+    core.server_build = core.get_server_build_from_user()
+    
+    core.minecraft_eula_agreement = core.get_eula_agreement_from_user()
+
+    core.user_option_review()
+
+    core.install()
 
 
 except KeyboardInterrupt:

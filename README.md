@@ -13,11 +13,13 @@ _Check [LICENSE](LICENSE) for more Information_
 
 ## What is this tool?
 
-This tool installs a Minecraft Java Edition Server, like Paper, Purpur or Vanilla for you, by downloading and configuring the server jars from their official sources.
+This tool installs a Minecraft Java Edition Server, like Paper, Purpur or Vanilla for you (as of now just paper), by downloading and configuring the server jars from their official sources.
 
 ### Features:
 - Select install directory
 - Select Server jar
+- Select Server version
+- Select Server build
 - Doesn't even install a server yet!
 
 If you want to run it in this state for whatever reason:
@@ -26,10 +28,10 @@ If you want to run it in this state for whatever reason:
 ```bash
 git clone https://github.com/katzzotik/kMCSI.git
 ```
-2. Assuming python is installed, run cli.py
+2. Assuming python is installed, run main.py
 ```bash
 cd ./kMCSI
-python cli.py
+python main.py
 ```
 
 Contact: katzzotik@proton.me\
