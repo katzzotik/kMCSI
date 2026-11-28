@@ -27,9 +27,9 @@ if __name__ == "__main__":
     print("Please run main.py")
     sys.exit(0)
 
-VERSION = "Alpha 0.1.0"
+VERSION = "Alpha 0.1.1"
 
-debug = False
+debug: bool = False
 
 # Defaults
 DEFAULT_INSTALL_PATH = Path.home() / "mc-server"
@@ -39,15 +39,15 @@ DEFAULT_SERVER_BUILD = "latest"
 DEFAULT_MINECRAFT_EULA = False
 
 # Selected
-install_path = None
-server_jar = None
+install_path = DEFAULT_INSTALL_PATH
+server_jar = DEFAULT_SERVER_JAR
 server_version = None
 server_build = None
-minecraft_eula_agreement = False
+minecraft_eula_agreement = DEFAULT_MINECRAFT_EULA
 
 # Cache
-_cached_papermc_versions = None
-_cached_papermc_builds = None
+_cached_papermc_versions: tuple[list[str], list[str]] | None = None
+_cached_papermc_builds: list[str] | None = None
 
 # Support for text color
 text_color = {
@@ -96,32 +96,38 @@ def copyright_notice():
     print(f"{text_color["yellow"]}Server jars provided by PaperMC(papermc.io), PurpurMC(purpurmc.org) (once added) and Mojang(minecraft.net) (as backbone for paper).{text_color["reset"]}\n")
 
 def get_install_path_from_user() -> Path:
+    global debug
     print(f"Please select a location to install the server to.\nDefault: {DEFAULT_INSTALL_PATH}")
 
     while True:
-        target_dir = None
-
-        try: 
-            user_input = input(f"{text_color["gray"]}Leave empty for default> {text_color["yellow"]}").strip()
+        try:
+            user_input = input(f"{text_color['gray']}Leave empty for default> {text_color['yellow']}").strip()
         finally:
             print(text_color["reset"], end="")
 
-        if not user_input:
+        if user_input == "debug":
+            debug = True
+            print(f"{text_color['gray']}[LOG] Debug mode enabled{text_color['reset']}")
+            continue
+        elif not user_input:
             target_dir = DEFAULT_INSTALL_PATH
         else:
             target_dir = Path(user_input).expanduser().resolve()
 
         if target_dir.exists() and not target_dir.is_dir():
-            print(f"{text_color["red"]}[ERROR] {target_dir} is a file, not a directory.{text_color["reset"]}")
+            print(f"{text_color['red']}[ERROR] {target_dir} is a file, not a directory.{text_color['reset']}")
             continue
         elif target_dir.exists() and any(target_dir.iterdir()):
-            print(f"{text_color["red"]}[ERROR] {target_dir} is not empty.{text_color["reset"]}")
+            print(f"{text_color['red']}[ERROR] {target_dir} is not empty.{text_color['reset']}")
             continue
-        
-        print(f"{text_color["gray"]}[LOG] Installing to: {target_dir}\n{text_color["reset"]}")
+
+        print(f"{text_color['gray']}[LOG] Installing to: {target_dir}\n{text_color['reset']}")
         return target_dir
 
+    raise RuntimeError("Unreachable")
+
 def get_server_jar_from_user():
+    global server_jar
     print(f"Please specify the server jar you would like to use. Type list for all options.\nDefault: {DEFAULT_SERVER_JAR.capitalize()}")
 
     while True:
@@ -186,47 +192,47 @@ def fetch_papermc_versions(force_refresh=False):
         if debug:
             print(f"{text_color["gray"]}[DEBUG] PaperMC Versions were fetched from API and cached{text_color["reset"]}")
         return supported_versions, unsupported_versions
-    except urllib.error.URLError:
-        print(f"{text_color["red"]}[ERROR] urllib encountered an URLError! Is the server reachable? Are you connected to the internet?{text_color["reset"]}")
-        return ""
     except urllib.error.HTTPError:
         print(f"{text_color["red"]}[ERROR] urllib encountered an HTTPError! There seems to be a problem on the server side.{text_color["reset"]}")
-        return ""
+        return [], []
     except urllib.error.ContentTooShortError:
         print(f"{text_color["red"]}[ERROR] urllib encountered an ContentTooShortError!{text_color["reset"]}")
-        return ""
+        return [], []
+    except urllib.error.URLError:
+        print(f"{text_color["red"]}[ERROR] urllib encountered an URLError! Is the server reachable? Are you connected to the internet?{text_color["reset"]}")
+        return [], []
     except Exception as e:
         print(f"{text_color["red"]}[ERROR] Unexpected Error: ({type(e).__name__}):{e}{text_color["reset"]}")
+        return [], []
 
 def list_papermc_versions():
     try:
         paper_supported, paper_unsupported = fetch_papermc_versions()
-
-        print_supported = ", ".join(paper_supported)
-        print_unsupported = ", ".join(paper_unsupported)
-
-        terminal_width = shutil.get_terminal_size().columns
-        
-        print_supported_wrapped = textwrap.fill(print_supported, width=terminal_width)
-        print_unsupported_wrapped = textwrap.fill(print_unsupported, width=terminal_width)
-
-        print(f"{text_color["green"]}Supported:")
-        #print(", ".join(paper_supported))
-        print(print_supported_wrapped)
-
-        print(f"{text_color["red"]}Unsupported (no updates from PaperMC, but selectable):")
-        #print(", ".join(paper_unsupported))
-        print(print_unsupported_wrapped)
-
-        print(f"{text_color["reset"]}", end="")
-    except Exception:
+    except ConnectionError:
         print(f"{text_color["red"]}[ERROR] It seems the API did not return any available versions.{text_color["reset"]}")
+        return
+
+    print_supported = ", ".join(paper_supported)
+    print_unsupported = ", ".join(paper_unsupported)
+
+    terminal_width = shutil.get_terminal_size().columns
+
+    def print_section(label: str, text: str, color: str, width: int):
+        print(f"{text_color[color]}{label}")
+        print(textwrap.fill(text, width=width))
+
+    print_section("Supported:", print_supported, "green", terminal_width)
+    print_section("Unsupported:", print_unsupported, "red", terminal_width)
+
+    print(f"{text_color["reset"]}", end="")
 
 def get_server_version_from_user():
     if server_jar == "paper":
         fetch_papermc_versions()
-
-    print(f"Please choose the server version you would like to use. Type list for all options.\nDefault: {DEFAULT_SERVER_VERSION} ({fetch_papermc_versions()[0][0]})")
+        supported_versions, unsupported_versions = fetch_papermc_versions()
+        all_versions = supported_versions + unsupported_versions
+        latest_version = supported_versions[0] if supported_versions else "unavailable"
+        print(f"Please choose the server version you would like to use. Type list for all options.\nDefault: {DEFAULT_SERVER_VERSION} ({latest_version})")
     
     while True:
         try: 
@@ -243,6 +249,13 @@ def get_server_version_from_user():
                 print(f"{text_color["gray"]}[LOG] Refetched from API.{text_color["reset"]}")
                 continue
             elif not user_input or user_input == "latest":
+                if not all_versions:
+                    supported_versions, unsupported_versions = fetch_papermc_versions()
+                    all_versions = supported_versions + unsupported_versions
+
+                if not all_versions:
+                    print(f"{text_color['red']}[ERROR] No selectable version found. Are you connected to the internet?{text_color['reset']}")
+                    continue
                 target_server_version = fetch_papermc_versions()[0][0]
             elif any(user_input in group for group in fetch_papermc_versions()):
                 target_server_version = user_input
@@ -254,7 +267,7 @@ def get_server_version_from_user():
         print(f"{text_color["gray"]}[LOG] {target_server_version} selected.{text_color["reset"]}")
         return target_server_version
 
-def fetch_papermc_builds(force_refresh=False):
+def fetch_papermc_builds(force_refresh=False) -> list[str]:
     global _cached_papermc_builds
 
     try:
@@ -280,17 +293,18 @@ def fetch_papermc_builds(force_refresh=False):
             print(f"{text_color["gray"]}[DEBUG] PaperMC builds were fetched from API and cached{text_color["reset"]}")
         return papermc_server_builds_str
 
-    except urllib.error.URLError:
-        print(f"{text_color["red"]}[ERROR] urllib encountered an URLError! Is the server reachable? Are you connected to the internet?{text_color["reset"]}")
-        return ""
     except urllib.error.HTTPError:
         print(f"{text_color["red"]}[ERROR] urllib encountered an HTTPError! There seems to be a problem on the server side.{text_color["reset"]}")
-        return ""
+        return []
     except urllib.error.ContentTooShortError:
         print(f"{text_color["red"]}[ERROR] urllib encountered an ContentTooShortError!{text_color["reset"]}")
-        return ""
+        return []
+    except urllib.error.URLError:
+        print(f"{text_color["red"]}[ERROR] urllib encountered an URLError! Is the server reachable? Are you connected to the internet?{text_color["reset"]}")
+        return []
     except Exception as e:
         print(f"{text_color["red"]}[ERROR] Unexpected Error: ({type(e).__name__}):{e}{text_color["reset"]}")
+        return []
 
 def list_papermc_builds():
     try:
@@ -315,8 +329,9 @@ def list_papermc_builds():
 def get_server_build_from_user():
     if server_jar == "paper":
         fetch_papermc_builds()
-
-    print(f"Please choose the server build you would like to use. Type list for all options.\nDefault: {DEFAULT_SERVER_BUILD} ({fetch_papermc_builds()[0]})")
+        all_builds = fetch_papermc_builds()
+        latest_version = all_builds[0] if all_builds else "unavailable"
+        print(f"Please choose the server build you would like to use. Type list for all options.\nDefault: {DEFAULT_SERVER_BUILD} ({latest_version})")
 
     while True:
         try: 
@@ -333,6 +348,12 @@ def get_server_build_from_user():
                 print(f"{text_color["gray"]}[LOG] Refetched from API.{text_color["reset"]}")
                 continue
             elif not user_input or user_input == "latest":
+                if not all_builds:
+                    all_builds = fetch_papermc_builds()
+
+                if not all_builds:
+                    print(f"{text_color['red']}[ERROR] No selectable build found. Are you connected to the internet?{text_color['reset']}")
+                    continue
                 target_server_build = fetch_papermc_builds()[0]
             elif user_input in fetch_papermc_builds():
                 target_server_build = user_input
@@ -347,8 +368,6 @@ def get_server_build_from_user():
 def get_eula_agreement_from_user():
     print(f"{text_color["red"]}NOT AN OFFICIAL MINECRAFT PRODUCT. kMCSI IS NOT AFFILIATED WITH MOJANG OR MICROSOFT.{text_color["reset"]}")
     print(f"In order to run the server, you must agree to the Minecraft EULA (https://www.minecraft.net/eula). If you do not agree, the server will not run, but still install. \nThis can be changed anytime in eula.txt. Type \"link\" to open the Minecraft EULA webpage.")
-
-    local_minecraft_eula_agreement = False
 
     while True:
         try: 
@@ -398,5 +417,5 @@ def user_option_review():
             continue
 
 def install():
-    print("This program isnt finished yet.")
+    print("This program isn't finished yet.")
     return
